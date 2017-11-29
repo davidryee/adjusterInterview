@@ -20,19 +20,18 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.ResultSetMetaData;
 import javax.json.*;
-public class HttpGetClient 
+public class HttpCreativeGetClient 
 {
     // jdbc Connection
     private static Connection conn = null;
     private static Statement stmt = null;
-    private static String dbURL = "jdbc:derby://localhost:1527/AdJusterDerby;create=true;user=davidryee;password=abc123";
-    private static String CAMPAIGN_TABLE_NAME = "CAMPAIGN";
+    private static String dbURL = "jdbc:derby://localhost:1527/AdJusterDerby;create=true;user=davidryee;password=abc123";    
+    private static String CREATIVE_TABLE_NAME = "CREATIVE";
 	public static void main(String[] args) throws ClientProtocolException, IOException
 	{
-		HttpClient client = new DefaultHttpClient();
-		HttpGet request = new HttpGet("http://homework.ad-juster.com/api/campaign");
+		HttpClient client = new DefaultHttpClient();		
 		HttpGet creativeRequest = new HttpGet("http://homework.ad-juster.com/api/creative");
-		HttpResponse response = client.execute(request);
+		HttpResponse response = client.execute(creativeRequest);
 		
 		JsonReader jsonReader = Json.createReader((new InputStreamReader(
 		    response.getEntity().getContent())));
@@ -40,16 +39,18 @@ public class HttpGetClient
 		JsonArray jsonarray = jsonReader.readArray();
 		try
         {
-            Class.forName("org.apache.derby.jdbc.ClientDriver").newInstance(); 
+            Class.forName("org.apache.derby.jdbc.ClientDriver").newInstance();
+            //Get a connection
             conn = DriverManager.getConnection("jdbc:derby:C:\\Users\\David\\AdjusterDerby", "davidryee", "abc123");
+            
             for (int i = 0; i < jsonarray.size(); i++) 
             {
 			    JsonObject jsonobject = jsonarray.getJsonObject(i);
-			    String name = jsonobject.getString("name");
-			    String startDate = jsonobject.getString("startDate");	
-			    String cpm = jsonobject.getString("cpm");
+			    int views = jsonobject.getInt("views");
+			    int clicks = jsonobject.getInt("clicks");	
+			    int parentid = jsonobject.getInt("parentId");
 			    int id = jsonobject.getInt("id");		 
-			    insertIntoCampaignTable(name, startDate, cpm, id);
+			    insertIntoCreativeTable(views, clicks, parentid, id);
 	        }
         }
         catch (Exception except)
@@ -58,18 +59,16 @@ public class HttpGetClient
         }		
     }
 	
-	private static void insertIntoCampaignTable(String name, String startDate, String cpm, int id)
+	private static void insertIntoCreativeTable(int views, int clicks, int parentId, int id)
 	{
 		try 
 		{
 			stmt = conn.createStatement();
-			//stmt.execute("insert into " + CAMPAIGN_TABLE_NAME + " values ('" +
-               //     cpm + "','" + startDate + "','" + name + "'," + id + ")");
-			String insertCampaign = "INSERT INTO " + CAMPAIGN_TABLE_NAME
-			        + " (NAME, START_DATE_NEW, CPM_NEW, ID)"
-			        + " VALUES (" + "'" + name + "'," + "'" + startDate + "'," + "'" + cpm + "'," + id+ ")";
+			String insertCreative = "INSERT INTO " + CREATIVE_TABLE_NAME
+			        + " (VIEWS, CLICKS, PARENTID, ID)"
+			        + " VALUES (" + views + "," + clicks + ","  + parentId + "," + id+ ")";
 		
-			stmt.executeUpdate(insertCampaign);
+			stmt.executeUpdate(insertCreative);
             stmt.close();
 		} 
 		catch (SQLException e) {
