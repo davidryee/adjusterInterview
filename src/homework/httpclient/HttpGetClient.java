@@ -19,27 +19,65 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.ResultSetMetaData;
-
+import javax.json.*;
 public class HttpGetClient 
 {
-
+    // jdbc Connection
+    private static Connection conn = null;
+    private static Statement stmt = null;
+    private static String dbURL = "jdbc:derby://localhost:1527/AdJusterDerby;create=true;user=davidryee;password=abc123";
+    private static String CAMPAIGN_TABLE_NAME = "CAMPAIGN";
 	public static void main(String[] args) throws ClientProtocolException, IOException
 	{
 		HttpClient client = new DefaultHttpClient();
 		HttpGet request = new HttpGet("http://homework.ad-juster.com/api/campaign");
 		HttpResponse response = client.execute(request);
-
-		// Get the response
-		BufferedReader rd = new BufferedReader
-		    (new InputStreamReader(
-		    response.getEntity().getContent()));
-
-		StringBuilder content = new StringBuilder();
-		String line;
-		while ((line = rd.readLine()) != null) 
+		
+		JsonReader jsonReader = Json.createReader((new InputStreamReader(
+		    response.getEntity().getContent())));
+		
+		JsonArray jsonarray = jsonReader.readArray();
+		try
+        {
+            Class.forName("org.apache.derby.jdbc.ClientDriver").newInstance();
+            //Get a connection
+            //conn = DriverManager.getConnection("jdbc:derby://localhost:1527/AdJusterDerby", "davidryee", "abc123"); 
+            conn = DriverManager.getConnection("jdbc:derby:C:\\Users\\David\\AdjusterDerby", "davidryee", "abc123");
+            for (int i = 0; i < jsonarray.size(); i++) 
+            {
+			    JsonObject jsonobject = jsonarray.getJsonObject(i);
+			    String name = jsonobject.getString("name");
+			    String startDate = jsonobject.getString("startDate");	
+			    String cpm = jsonobject.getString("cpm");
+			    int id = jsonobject.getInt("id");		 
+			    insertIntoCampaignTable(name, startDate, cpm, id);
+	        }
+        }
+        catch (Exception except)
+        {
+        	except.printStackTrace();
+        }		
+    }
+	
+	private static void insertIntoCampaignTable(String name, String startDate, String cpm, int id)
+	{
+		try 
 		{
-		    content.append(line);		
-	    }
-		System.out.println(content);
+			stmt = conn.createStatement();
+			//stmt.execute("insert into " + CAMPAIGN_TABLE_NAME + " values ('" +
+               //     cpm + "','" + startDate + "','" + name + "'," + id + ")");
+			String insertCampaign = "INSERT INTO " + CAMPAIGN_TABLE_NAME
+			        + " (NAME, START_DATE_NEW, CPM_NEW, ID)"
+			        + " VALUES (" + "'" + name + "'," + "'" + startDate + "'," + "'" + cpm + "'," + id+ ")";
+		
+			stmt.executeUpdate(insertCampaign);
+            stmt.close();
+		} 
+		catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
+	
 }
